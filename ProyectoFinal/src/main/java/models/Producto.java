@@ -11,5 +11,5 @@ public abstract class Producto {
         return nombre;
     }
 
-    public abstract void manufacturar();
+    public abstract void manufacturar(ProgressObserver observer) throws InterruptedException;
 }
