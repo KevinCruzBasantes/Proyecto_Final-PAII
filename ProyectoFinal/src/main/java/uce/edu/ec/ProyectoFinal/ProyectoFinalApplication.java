@@ -4,23 +4,27 @@ import controller.Controlador;
 import models.Administrador;
 import models.Cliente;
 import models.ProductoFactory;
+import models.ProductoObserver;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import view.Vista;
+
+import javax.swing.*;
 
 //@SpringBootApplication
 public class ProyectoFinalApplication {
 
 	public static void main(String[] args) {
-	//	SpringApplication.run(ProyectoFinalApplication.class, args);
-
+		//SpringApplication.run(ProyectoFinalApplication.class, args);
 		Cliente cliente = new Cliente("Juan");
 		Administrador administrador = new Administrador("Ana");
 		ProductoFactory productoFactory = new ProductoFactory();
 		Controlador controlador = new Controlador(cliente, administrador, productoFactory);
-		Vista vista = new Vista(controlador);
+		ProductoObserver observer = new ProductoObserver();
 
-		vista.mostrarMenu();
+		administrador.addObserver(observer);
+
+		SwingUtilities.invokeLater(() -> new Vista(controlador));
 	}
 
 
