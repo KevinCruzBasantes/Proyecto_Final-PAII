@@ -4,24 +4,35 @@ import controller.Controlador;
 import models.Administrador;
 import models.Cliente;
 import models.ProductoFactory;
-import view.VistaCliente;
-import view.VistaAdministrador;
+import models.ProductoObserver;
+import util.InicializadorDeProductos;
+import util.ProductoAPI; // Importa el cliente API
+import view.Vista;
 
 import javax.swing.*;
 
 public class ProyectoFinalApplication {
 
 	public static void main(String[] args) {
-		Cliente cliente = new Cliente("Juan");
-		Administrador administrador = new Administrador("Ana");
-		ProductoFactory productoFactory = new ProductoFactory();
-		Controlador controlador = new Controlador(cliente, administrador, productoFactory);
+		// Crea una instancia del cliente API
+		ProductoAPI productoAPI = new ProductoAPI();
 
-		SwingUtilities.invokeLater(() -> {
-			VistaAdministrador vistaAdministrador = new VistaAdministrador(controlador);
-			controlador.setVistaAdministrador(vistaAdministrador);
-			VistaCliente vistaCliente = new VistaCliente(controlador);
-			controlador.setVistaCliente(vistaCliente);
-		});
+		// Inicializa los productos utilizando el cliente API
+		InicializadorDeProductos inicializador = new InicializadorDeProductos(productoAPI);
+		inicializador.inicializar(); // Esto guardará los productos en el proyecto de persistencia
+
+		// Crea una instancia del factory con el API
+		ProductoFactory productoFactory = new ProductoFactory(productoAPI);
+
+		// Crea instancias de Cliente, Administrador y Controlador
+		Cliente cliente = new Cliente("Juan"); // Asegúrate de que Cliente tenga un constructor que acepte un nombre
+		Administrador administrador = new Administrador("Ana");
+		Controlador controlador = new Controlador(administrador, productoFactory);
+		ProductoObserver observer = new ProductoObserver();
+
+		administrador.addObserver(observer);
+
+		// Configura la vista y la invoca en el hilo de eventos de Swing
+		SwingUtilities.invokeLater(() -> new Vista(controlador));
 	}
 }
