@@ -1,5 +1,6 @@
 package view;
 import controller.Controlador;
+import models.Producto;
 import models.ProgressObserver;
 
 import javax.swing.*;
@@ -11,20 +12,19 @@ import java.awt.event.ActionListener;
 
 public class Vista extends JFrame implements ProgressObserver {
     private Controlador controlador;
-    private JComboBox<String> productoComboBox;
+    private JComboBox<String> tipoProductoComboBox;
+    private JComboBox<String> nombreProductoComboBox;
     private JProgressBar progressBar;
     private JLabel progressLabel;
-<<<<<<< HEAD
     private JPanel mainPanel;
-=======
->>>>>>> efbea1abb96d44a26c0c2397f33c2eab3ee04358
+    private JTextArea carritoTextArea;
+    private JLabel stockLabel;
 
     public Vista(Controlador controlador) {
         this.controlador = controlador;
         this.setTitle("Tienda");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-<<<<<<< HEAD
-        this.setSize(400, 300);
+        this.setSize(400, 400);
         this.setLayout(new BorderLayout());
 
         mainPanel = new JPanel();
@@ -40,21 +40,43 @@ public class Vista extends JFrame implements ProgressObserver {
         mainPanel.add(homePanel, "home");
 
         JPanel clientePanel = new JPanel();
-        clientePanel.setLayout(new FlowLayout());
-        productoComboBox = new JComboBox<>(new String[]{"madera", "hierro"});
-        JButton comprarButton = new JButton("Comprar");
+        clientePanel.setLayout(new BorderLayout());
 
-        comprarButton.addActionListener(new ActionListener() {
+        JPanel productoPanel = new JPanel();
+        tipoProductoComboBox = new JComboBox<>(new String[]{"madera", "hierro"});
+        nombreProductoComboBox = new JComboBox<>();
+        stockLabel = new JLabel();
+
+        tipoProductoComboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String tipoProducto = (String) productoComboBox.getSelectedItem();
-                controlador.realizarPedido(tipoProducto, Vista.this);
+                actualizarProductos();
             }
         });
 
-        clientePanel.add(new JLabel("Seleccione producto:"));
-        clientePanel.add(productoComboBox);
-        clientePanel.add(comprarButton);
+        actualizarProductos();
+
+        JButton agregarCarritoButton = new JButton("Agregar al Carrito");
+
+        agregarCarritoButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String tipoProducto = (String) tipoProductoComboBox.getSelectedItem();
+                String nombreProducto = (String) nombreProductoComboBox.getSelectedItem();
+                controlador.agregarAlCarrito(tipoProducto, nombreProducto);
+                actualizarCarrito();
+                actualizarStock();
+            }
+        });
+
+        productoPanel.add(new JLabel("Tipo de Producto:"));
+        productoPanel.add(tipoProductoComboBox);
+        productoPanel.add(new JLabel("Nombre del Producto:"));
+        productoPanel.add(nombreProductoComboBox);
+        productoPanel.add(stockLabel);
+        productoPanel.add(agregarCarritoButton);
+
+        clientePanel.add(productoPanel, BorderLayout.NORTH);
 
         JPanel progressPanel = new JPanel();
         progressPanel.setLayout(new BorderLayout());
@@ -64,7 +86,31 @@ public class Vista extends JFrame implements ProgressObserver {
         progressPanel.add(progressLabel, BorderLayout.NORTH);
         progressPanel.add(progressBar, BorderLayout.CENTER);
 
-        clientePanel.add(progressPanel);
+        clientePanel.add(progressPanel, BorderLayout.CENTER);
+
+        carritoTextArea = new JTextArea(5, 30);
+        carritoTextArea.setEditable(false);
+        JScrollPane carritoScrollPane = new JScrollPane(carritoTextArea);
+        clientePanel.add(carritoScrollPane, BorderLayout.SOUTH);
+
+        JButton mostrarCarritoButton = new JButton("Mostrar Carrito");
+        mostrarCarritoButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                actualizarCarrito();
+            }
+        });
+
+        JButton comprarButton = new JButton("Comprar");
+        comprarButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controlador.realizarPedido(Vista.this);
+            }
+        });
+
+        clientePanel.add(mostrarCarritoButton, BorderLayout.EAST);
+        clientePanel.add(comprarButton, BorderLayout.WEST);
 
         mainPanel.add(clientePanel, "cliente");
 
@@ -74,39 +120,10 @@ public class Vista extends JFrame implements ProgressObserver {
                 JOptionPane.showMessageDialog(Vista.this, "Administración de pedidos en curso...");
             }
         });
-=======
-        this.setSize(500, 400);
-        this.setLayout(new BorderLayout());
-
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout());
-
-        JPanel buttonPanel = new JPanel();
-        JButton clienteButton = new JButton("Cliente");
-        JButton administradorButton = new JButton("Administrador");
-
-        buttonPanel.add(clienteButton);
-        buttonPanel.add(administradorButton);
-
-        JPanel progressPanel = new JPanel();
-        progressPanel.setLayout(new BorderLayout());
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setStringPainted(true);
-        progressLabel = new JLabel("Progreso:");
-
-        progressPanel.add(progressLabel, BorderLayout.NORTH);
-        progressPanel.add(progressBar, BorderLayout.CENTER);
-
-        mainPanel.add(buttonPanel, BorderLayout.NORTH);
-        mainPanel.add(progressPanel, BorderLayout.CENTER);
-
-        this.add(mainPanel);
->>>>>>> efbea1abb96d44a26c0c2397f33c2eab3ee04358
 
         clienteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-<<<<<<< HEAD
                 CardLayout cl = (CardLayout) (mainPanel.getLayout());
                 cl.show(mainPanel, "cliente");
             }
@@ -116,50 +133,40 @@ public class Vista extends JFrame implements ProgressObserver {
         this.setVisible(true);
     }
 
-=======
-                mostrarMenuCliente();
-            }
-        });
-
-        administradorButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                mostrarMenuAdministrador();
-            }
-        });
-
-        this.setVisible(true);
+    private void actualizarProductos() {
+        String tipoProducto = (String) tipoProductoComboBox.getSelectedItem();
+        nombreProductoComboBox.removeAllItems();
+        if (tipoProducto.equals("madera")) {
+            nombreProductoComboBox.addItem("silla");
+            nombreProductoComboBox.addItem("mesa");
+            nombreProductoComboBox.addItem("estanteria");
+        } else if (tipoProducto.equals("hierro")) {
+            nombreProductoComboBox.addItem("silla");
+            nombreProductoComboBox.addItem("mesa");
+            nombreProductoComboBox.addItem("estanteria");
+        }
+        actualizarStock();
     }
 
-    private void mostrarMenuCliente() {
-        JDialog clienteDialog = new JDialog(this, "Cliente", true);
-        clienteDialog.setSize(300, 150);
-        clienteDialog.setLayout(new FlowLayout());
-
-        productoComboBox = new JComboBox<>(new String[]{"madera", "hierro"});
-        JButton comprarButton = new JButton("Comprar");
-
-        comprarButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String tipoProducto = (String) productoComboBox.getSelectedItem();
-                controlador.realizarPedido(tipoProducto, Vista.this);
-                clienteDialog.dispose();
-            }
-        });
-
-        clienteDialog.add(new JLabel("Seleccione producto:"));
-        clienteDialog.add(productoComboBox);
-        clienteDialog.add(comprarButton);
-
-        clienteDialog.setVisible(true);
+    private void actualizarStock() {
+        String tipoProducto = (String) tipoProductoComboBox.getSelectedItem();
+        String nombreProducto = (String) nombreProductoComboBox.getSelectedItem();
+        if (nombreProducto != null) {
+            int stock = controlador.obtenerStock(tipoProducto, nombreProducto);
+            stockLabel.setText("Stock: " + stock);
+        } else {
+            stockLabel.setText("");
+        }
     }
 
-    private void mostrarMenuAdministrador() {
-        JOptionPane.showMessageDialog(this, "Administración de pedidos en curso...");
+    private void actualizarCarrito() {
+        StringBuilder carritoContent = new StringBuilder("Carrito de Compras:\n");
+        for (Producto producto : controlador.getCarrito()) {
+            carritoContent.append(producto.getNombre()).append("\n");
+        }
+        carritoTextArea.setText(carritoContent.toString());
     }
 
->>>>>>> efbea1abb96d44a26c0c2397f33c2eab3ee04358
     @Override
     public void updateProgress(String step, int progress) {
         SwingUtilities.invokeLater(() -> {

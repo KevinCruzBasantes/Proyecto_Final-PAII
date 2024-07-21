@@ -27,5 +27,4 @@ public class ProyectoFinalApplication {
 		SwingUtilities.invokeLater(() -> new Vista(controlador));
 	}
 
-
 }
