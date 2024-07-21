@@ -5,33 +5,39 @@ import java.util.List;
 
 public class Administrador {
     private String nombre;
-    private List<Observer> observers;
+    private List<Pedido> pedidos;
 
     public Administrador(String nombre) {
         this.nombre = nombre;
-        this.observers = new ArrayList<>();
+        this.pedidos = new ArrayList<>();
     }
 
     public String getNombre() {
         return nombre;
     }
 
-    public void addObserver(Observer observer) {
-        observers.add(observer);
+    public void agregarPedido(Producto producto, ProgressObserver observer) {
+        Pedido pedido = new Pedido(producto, observer);
+        pedidos.add(pedido);
+        notifyObservers(pedido);
     }
 
-    public void removeObserver(Observer observer) {
-        observers.remove(observer);
-    }
-
-    public void notifyObservers(Producto producto) {
-        for (Observer observer : observers) {
-            observer.update(producto);
+    public void aprobarPedido(Pedido pedido) {
+        System.out.println("Pedido aprobado por " + nombre);
+        try {
+            pedido.getProducto().manufacturar(pedido.getObserver());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
-    public void aprobarPedido(Producto producto) {
-        System.out.println("Pedido aprobado por " + nombre);
-        notifyObservers(producto);
+    public List<Pedido> getPedidos() {
+        return pedidos;
+    }
+
+    private void notifyObservers(Pedido pedido) {
+        for (Observer observer : pedido.getObservers()) {
+            observer.update(pedido.getProducto());
+        }
     }
 }
