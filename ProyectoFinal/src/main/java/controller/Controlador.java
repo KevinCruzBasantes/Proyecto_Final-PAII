@@ -1,71 +1,89 @@
 package controller;
 
 import models.*;
-import util.ClienteAPI;
+import view.*;
 
-import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Controlador {
-
+    private Cliente cliente;
     private Administrador administrador;
     private ProductoFactory productoFactory;
     private ExecutorService executorService;
-    private List<Producto> carrito;
-    private ClienteAPI clienteAPI;
+    private VistaAdministrador vistaAdministrador;
+    private VistaCliente vistaCliente;
+    private Inventario inventario;
 
-    public Controlador(Administrador administrador, ProductoFactory productoFactory) {
+    public Controlador(Cliente cliente, Administrador administrador, ProductoFactory productoFactory, Inventario inventario) {
+        this.cliente = cliente;
         this.administrador = administrador;
         this.productoFactory = productoFactory;
         this.executorService = Executors.newFixedThreadPool(2);
-        this.carrito = new ArrayList<>();
-        this.clienteAPI = new ClienteAPI(); // Asegúrate de inicializar ClienteAPI
+        this.inventario = inventario;
     }
 
-    public List<Producto> getCarrito() {
-        return carrito;
+    public void setVistaAdministrador(VistaAdministrador vistaAdministrador) {
+        this.vistaAdministrador = vistaAdministrador;
     }
 
-    public void agregarAlCarrito(String tipo, String nombre) {
-        Producto producto = productoFactory.obtenerProducto(tipo, nombre);
-        if (producto == null) {
-            JOptionPane.showMessageDialog(null, "Producto no encontrado: tipo = " + tipo + ", nombre = " + nombre);
-        } else if (producto.getStock() > 0) {
-            carrito.add(producto);
-            producto.reducirStock();
-        } else {
-            JOptionPane.showMessageDialog(null, "El producto " + nombre + " de tipo " + tipo + " está fuera de stock.");
-        }
+    public void setVistaCliente(VistaCliente vistaCliente) {
+        this.vistaCliente = vistaCliente;
     }
 
-    public void realizarPedido(ProgressObserver observer) {
-        for (Producto producto : carrito) {
-            administrador.aprobarPedido(producto);
-            executorService.submit(() -> {
-                try {
-                    producto.manufacturar(observer);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+    public void realizarPedido(String tipoProducto, String nombreProducto, int cantidad) {
+        int stockDisponible = inventario.obtenerStock(tipoProducto, nombreProducto);
+        if (stockDisponible >= cantidad) {
+            try {
+                Producto producto = productoFactory.obtenerProducto(tipoProducto, nombreProducto);
+                if (producto != null) {
+                    producto.setCantidad(cantidad);
+                    vistaCliente.agregarPedido(producto);
+                    vistaAdministrador.agregarPedido(producto, cantidad, stockDisponible);
+                    vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): En espera");
+                } else {
+                    System.out.println("Producto no encontrado: " + nombreProducto);
                 }
-            });
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
+        } else {
+            vistaCliente.notificarPedido(null, false);
         }
-        carrito.clear();
     }
 
-    public int obtenerStock(String tipo, String nombre) {
-        return productoFactory.obtenerStock(tipo, nombre);
+    public void aprobarPedido(Producto producto, boolean fabricar) {
+        if (fabricar) {
+            int cantidad = producto.getCantidad();
+            String tipo = producto.getMaterial();
+            String nombre = producto.getNombre();
+
+            if (inventario.reducirCantidad(tipo, nombre, cantidad)) {
+                executorService.submit(() -> {
+                    for (int i = 0; i < cantidad; i++) {
+                        try {
+                            producto.manufacturar(vistaAdministrador);
+                            vistaCliente.notificarPedido(producto, true);
+                            vistaCliente.actualizarEstadoPedidos("El producto " + producto.getNombre() + " ha sido creado con éxito.");
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            vistaCliente.notificarPedido(producto, false);
+                            vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): Rechazado");
+                        }
+                    }
+                    vistaAdministrador.actualizarStock(producto, inventario.obtenerStock(tipo, nombre));
+                });
+            } else {
+                vistaCliente.notificarPedido(producto, false);
+                vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): Rechazado");
+            }
+        } else {
+            vistaCliente.notificarPedido(producto, false);
+            vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): Rechazado");
+        }
     }
 
     public void shutdown() {
         executorService.shutdown();
-    }
-
-    public void agregarCliente(String nombre) {
-        Cliente nuevoCliente = new Cliente();
-        nuevoCliente.setNombre(nombre);
-        clienteAPI.crearCliente(nuevoCliente);
     }
 }

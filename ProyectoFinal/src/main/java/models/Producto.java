@@ -2,30 +2,30 @@ package models;
 
 public abstract class Producto {
     private String nombre;
-    private int stock;
+    private int cantidad;
 
-    public Producto(String nombre, int stock) {
+    public Producto(String nombre) {
         this.nombre = nombre;
-        this.stock = stock;
     }
 
     public String getNombre() {
         return nombre;
     }
 
-    public int getStock() {
-        return stock;
+    public int getCantidad() {
+        return cantidad;
     }
 
-    public void reducirStock() {
-        if (stock > 0) {
-            stock--;
-        }
-    }
-
-    public void aumentarStock() {
-        stock++;
+    public void setCantidad(int cantidad) {
+        this.cantidad = cantidad;
     }
 
     public abstract void manufacturar(ProgressObserver observer) throws InterruptedException;
+
+    public abstract String getMaterial();
+
+    @Override
+    public String toString() {
+        return nombre + " (" + getMaterial() + ")";
+    }
 }
