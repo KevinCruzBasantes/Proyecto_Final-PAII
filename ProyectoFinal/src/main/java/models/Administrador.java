@@ -1,5 +1,6 @@
 package models;
 
+import util.ProductoDTO;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,8 +17,8 @@ public class Administrador {
         return nombre;
     }
 
-    public void agregarPedido(Producto producto, ProgressObserver observer) {
-        Pedido pedido = new Pedido(producto, observer);
+    public void agregarPedido(ProductoDTO producto, int cantidad, int stockDisponible) {
+        Pedido pedido = new Pedido(producto, cantidad, stockDisponible);
         pedidos.add(pedido);
         notifyObservers(pedido);
     }
@@ -25,7 +26,8 @@ public class Administrador {
     public void aprobarPedido(Pedido pedido) {
         System.out.println("Pedido aprobado por " + nombre);
         try {
-            pedido.getProducto().manufacturar(pedido.getObserver());
+            ProgressObserver observer = pedido.getObservers().get(0);
+            pedido.getProducto().manufacturar(observer);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -36,8 +38,8 @@ public class Administrador {
     }
 
     private void notifyObservers(Pedido pedido) {
-        for (Observer observer : pedido.getObservers()) {
-            observer.update(pedido.getProducto());
+        for (ProgressObserver observer : pedido.getObservers()) {
+            observer.updateProgress("Notificación inicial", 0, pedido.getProducto());
         }
     }
 }

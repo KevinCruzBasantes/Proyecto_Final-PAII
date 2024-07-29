@@ -1,26 +1,34 @@
 package controller;
 
-import models.*;
-import view.*;
+import models.Administrador;
+import models.Cliente;
+import models.ProductoFactory;
+import util.ClienteAPI;
+import util.ProductoAPI;
+import util.ProductoDTO;
+import view.VistaAdministrador;
+import view.VistaCliente;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Controlador {
     private Cliente cliente;
     private Administrador administrador;
     private ProductoFactory productoFactory;
-    private ExecutorService executorService;
+    private ClienteAPI clienteAPI;
+    private ProductoAPI productoAPI;
     private VistaAdministrador vistaAdministrador;
     private VistaCliente vistaCliente;
-    private Inventario inventario;
+    private Map<String, Integer> carritoDeCompras;
 
-    public Controlador(Cliente cliente, Administrador administrador, ProductoFactory productoFactory, Inventario inventario) {
+    public Controlador(Cliente cliente, Administrador administrador, ProductoFactory productoFactory, ClienteAPI clienteAPI, ProductoAPI productoAPI) {
         this.cliente = cliente;
         this.administrador = administrador;
         this.productoFactory = productoFactory;
-        this.executorService = Executors.newFixedThreadPool(2);
-        this.inventario = inventario;
+        this.clienteAPI = clienteAPI;
+        this.productoAPI = productoAPI;
+        this.carritoDeCompras = new HashMap<>();
     }
 
     public void setVistaAdministrador(VistaAdministrador vistaAdministrador) {
@@ -31,59 +39,53 @@ public class Controlador {
         this.vistaCliente = vistaCliente;
     }
 
-    public void realizarPedido(String tipoProducto, String nombreProducto, int cantidad) {
-        int stockDisponible = inventario.obtenerStock(tipoProducto, nombreProducto);
-        if (stockDisponible >= cantidad) {
-            try {
-                Producto producto = productoFactory.obtenerProducto(tipoProducto, nombreProducto);
-                if (producto != null) {
-                    producto.setCantidad(cantidad);
-                    vistaCliente.agregarPedido(producto);
-                    vistaAdministrador.agregarPedido(producto, cantidad, stockDisponible);
-                    vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): En espera");
-                } else {
-                    System.out.println("Producto no encontrado: " + nombreProducto);
-                }
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
-            }
-        } else {
-            vistaCliente.notificarPedido(null, false);
+    public void agregarProducto(String material, String nombre, int cantidad) {
+        // Añade el producto al carrito de compras
+        carritoDeCompras.put(nombre, carritoDeCompras.getOrDefault(nombre, 0) + cantidad);
+    }
+
+    public Map<String, Integer> obtenerProductosCarrito() {
+        return carritoDeCompras;
+    }
+
+    public void realizarPedido() {
+
+        if (vistaAdministrador != null) {
+            vistaAdministrador.cargarProductosDesdeCarrito();
         }
     }
 
-    public void aprobarPedido(Producto producto, boolean fabricar) {
-        if (fabricar) {
-            int cantidad = producto.getCantidad();
-            String tipo = producto.getMaterial();
-            String nombre = producto.getNombre();
 
-            if (inventario.reducirCantidad(tipo, nombre, cantidad)) {
-                executorService.submit(() -> {
-                    for (int i = 0; i < cantidad; i++) {
-                        try {
-                            producto.manufacturar(vistaAdministrador);
-                            vistaCliente.notificarPedido(producto, true);
-                            vistaCliente.actualizarEstadoPedidos("El producto " + producto.getNombre() + " ha sido creado con éxito.");
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            vistaCliente.notificarPedido(producto, false);
-                            vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): Rechazado");
-                        }
-                    }
-                    vistaAdministrador.actualizarStock(producto, inventario.obtenerStock(tipo, nombre));
-                });
-            } else {
-                vistaCliente.notificarPedido(producto, false);
-                vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): Rechazado");
-            }
-        } else {
-            vistaCliente.notificarPedido(producto, false);
-            vistaCliente.actualizarEstadoPedidos(producto.getNombre() + " (" + producto.getMaterial() + "): Rechazado");
+
+    public ProductoDTO agregarProducto(ProductoDTO producto) {
+        // Llama a ProductoAPI para crear o actualizar el producto
+        ProductoDTO productoCreado = productoAPI.crearOActualizarProducto(producto);
+
+        // Actualiza la vista del administrador
+        if (vistaAdministrador != null) {
+            vistaAdministrador.cargarProductosDesdeCarrito();
         }
+
+        // Actualiza la vista del cliente
+        if (vistaCliente != null) {
+            vistaCliente.cargarProductos();
+        }
+
+        return productoCreado;
     }
 
-    public void shutdown() {
-        executorService.shutdown();
+    public void eliminarProducto(Long id) {
+        // Llama a ProductoAPI para eliminar el producto
+        productoAPI.eliminarProducto(id);
+
+        // Actualiza la vista del administrador
+        if (vistaAdministrador != null) {
+            vistaAdministrador.cargarProductosDesdeCarrito();
+        }
+
+        // Actualiza la vista del cliente
+        if (vistaCliente != null) {
+            vistaCliente.cargarProductos();
+        }
     }
 }

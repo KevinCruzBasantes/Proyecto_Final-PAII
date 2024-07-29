@@ -1,32 +1,46 @@
 package models;
 
+import util.ProductoDTO;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Pedido {
-    private Producto producto;
-    private ProgressObserver observer;
-    private List<Observer> observers;
+    private ProductoDTO producto;
+    private List<ProgressObserver> observers;
+    private int cantidad;
+    private int stockDisponible;
 
-    public Pedido(Producto producto, ProgressObserver observer) {
+    public Pedido(ProductoDTO producto, int cantidad, int stockDisponible) {
         this.producto = producto;
-        this.observer = observer;
+        this.cantidad = cantidad;
+        this.stockDisponible = stockDisponible;
         this.observers = new ArrayList<>();
+
     }
 
-    public Producto getProducto() {
+    public ProductoDTO getProducto() {
         return producto;
     }
 
-    public ProgressObserver getObserver() {
-        return observer;
+    public List<ProgressObserver> getObservers() {
+        return observers;
     }
 
-    public void addObserver(Observer observer) {
+    public void addObserver(ProgressObserver observer) {
         observers.add(observer);
     }
 
-    public List<Observer> getObservers() {
-        return observers;
+    public void notifyObservers(String message, int progreso) {
+        for (ProgressObserver observer : observers) {
+            observer.updateProgress(message, progreso, producto);
+        }
+    }
+
+    public int getCantidad() {
+        return cantidad;
+    }
+
+    public int getStockDisponible() {
+        return stockDisponible;
     }
 }
