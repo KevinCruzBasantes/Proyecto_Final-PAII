@@ -6,22 +6,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class ProductoMadera {
+public class Administrador {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Identificador único
-
+    private Long id;
     private String nombre;
-    private int stock;
 
-    // Constructor, getters y setters
-    public ProductoMadera() {}
-
-    public ProductoMadera(String nombre, int stock) {
-        this.nombre = nombre;
-        this.stock = stock;
-    }
-
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -36,13 +27,5 @@ public class ProductoMadera {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
-    }
-
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
     }
 }

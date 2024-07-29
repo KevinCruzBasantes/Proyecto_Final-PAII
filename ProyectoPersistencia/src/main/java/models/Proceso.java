@@ -1,27 +1,17 @@
 package models;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-
 @Entity
-public class ProductoHierro {
+public class Proceso {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Identificador único
-
+    private Long id;
     private String nombre;
-    private int stock;
+    private int duracion;
 
-    // Constructor, getters y setters
-    public ProductoHierro() {}
-
-    public ProductoHierro(String nombre, int stock) {
-        this.nombre = nombre;
-        this.stock = stock;
-    }
-
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -38,11 +28,11 @@ public class ProductoHierro {
         this.nombre = nombre;
     }
 
-    public int getStock() {
-        return stock;
+    public int getDuracion() {
+        return duracion;
     }
 
-    public void setStock(int stock) {
-        this.stock = stock;
+    public void setDuracion(int duracion) {
+        this.duracion = duracion;
     }
 }
